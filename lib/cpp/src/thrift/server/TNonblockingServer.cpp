@@ -452,6 +452,16 @@ void TNonblockingServer::TConnection::workSocket() {
     }
 
     readWant_ = ntohl(framing.size);
+    if (readWant_ == 0) {
+      // Don't allow 0 frame sizes.  This prevents bad clients from
+      // causing coredump.
+      GlobalOutput.printf(
+          "TNonblockingServer: frame size 0 from client %s. "
+          "Remote side not using TFramedTransport?",
+          tSocket_->getSocketInfo().c_str());
+      close();
+      return;
+    }
     if (readWant_ > server_->getMaxFrameSize()) {
       // Don't allow giant frame sizes.  This prevents bad clients from
       // causing us to try and allocate a giant buffer.
